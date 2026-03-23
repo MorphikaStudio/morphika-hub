@@ -1,0 +1,78 @@
+{
+  "hub": {
+    "name": "Morphika",
+    "tagline": "Ideas, prototypes & experiments",
+    "generated": "2026-03-23T10:07:00.528Z"
+  },
+  "sections": [
+    {
+      "id": "ai-workflows",
+      "name": "AI Workflows",
+      "icon": "✦",
+      "color": "#B05AE8",
+      "description": "AI video production — Runway, Kling, Sora, Higgsfield",
+      "entries": []
+    },
+    {
+      "id": "production",
+      "name": "Production",
+      "icon": "◎",
+      "color": "#E8FF5A",
+      "description": "Client projects, CGI production, deliverables",
+      "entries": []
+    },
+    {
+      "id": "rnd",
+      "name": "R&D",
+      "icon": "◇",
+      "color": "#5A9FE8",
+      "description": "Research, experiments, explorations",
+      "entries": []
+    },
+    {
+      "id": "tools",
+      "name": "Tools",
+      "icon": "⚒",
+      "color": "#5AE8B5",
+      "description": "Internal tools and products",
+      "entries": [
+        {
+          "id": "review-v02",
+          "name": "Morphika Review",
+          "type": "prototype",
+          "version": "v0.2",
+          "date": "2025-03-20",
+          "status": "active",
+          "description": "Image annotations + multi-version comparison view",
+          "tags": [
+            "review",
+            "annotations",
+            "comparison"
+          ],
+          "hasPrototype": false,
+          "hasNotes": false,
+          "path": null,
+          "notes": null
+        },
+        {
+          "id": "review-v01",
+          "name": "Morphika Review",
+          "type": "prototype",
+          "version": "v0.1",
+          "date": "2025-03-18",
+          "status": "active",
+          "description": "Frame.io-style client review tool — versioned assets, timestamped comments",
+          "tags": [
+            "review",
+            "client-facing",
+            "video"
+          ],
+          "hasPrototype": false,
+          "hasNotes": false,
+          "path": null,
+          "notes": null
+        }
+      ]
+    }
+  ]
+}

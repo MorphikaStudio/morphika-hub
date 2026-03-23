@@ -1,0 +1,9 @@
+{
+  "name": "Morphika Review",
+  "version": "v0.1",
+  "type": "prototype",
+  "date": "2025-03-18",
+  "status": "active",
+  "description": "Frame.io-style client review tool — versioned assets, timestamped comments",
+  "tags": ["review", "client-facing", "video"]
+}

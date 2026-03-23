@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morphika — Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0A0A0B;
+      --bg-sidebar: #0E0E10;
+      --surface: rgba(255,255,255,0.02);
+      --surface-hover: rgba(255,255,255,0.045);
+      --surface-active: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.12);
+      --text: #EEEAE2;
+      --text-secondary: #A09882;
+      --text-muted: #555046;
+      --text-ghost: #333028;
+      --accent: #E8FF5A;
+      --green: #5AE8B5;
+      --red: #E85A5A;
+      --blue: #5A9FE8;
+      --purple: #B05AE8;
+      --amber: #E8A85A;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --heading: 'Space Mono', monospace;
+      --body: 'Inter', -apple-system, system-ui, sans-serif;
+      --sidebar-w: 260px;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      overflow: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.5;
+    }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:.4; } 50% { opacity:1; } }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+
+    /* ── Sidebar ─────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      height: 100vh; background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+    }
+
+    .sidebar__brand { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+    .sidebar__logo { font-family: var(--heading); font-size: 18px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 2px; }
+    .sidebar__tagline { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.04em; }
+
+    .sidebar__search { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar__search input {
+      width: 100%; padding: 8px 10px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--body);
+    }
+    .sidebar__search input::placeholder { color: #3a3a3a; }
+    .sidebar__search input:focus { outline: none; border-color: rgba(255,255,255,0.15); }
+
+    .sidebar__nav { flex: 1; overflow-y: auto; padding: 12px 8px; }
+
+    .sidebar__section-label {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted); padding: 12px 12px 6px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+      transition: all 0.15s; font-size: 13px; color: var(--text-secondary); user-select: none;
+    }
+    .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+    .nav-item.active { background: var(--surface-active); color: var(--text); }
+    .nav-item__icon { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+    .nav-item__name { flex: 1; }
+    .nav-item__count {
+      font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+      background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;
+    }
+
+    .sidebar__actions { padding: 8px; border-top: 1px solid var(--border); }
+    .sidebar__footer { padding: 10px 16px; font-family: var(--mono); font-size: 10px; color: var(--text-ghost); }
+
+    /* ── Main ────────────────────────────── */
+    .main { flex: 1; height: 100vh; overflow-y: auto; overflow-x: hidden; }
+
+    .main__header {
+      padding: 36px 48px 28px; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease;
+    }
+    .main__section-icon { font-size: 28px; margin-bottom: 8px; }
+    .main__title {
+      font-family: var(--heading); font-size: 28px; font-weight: 700;
+      letter-spacing: -0.03em; margin-bottom: 4px;
+    }
+    .main__desc { font-size: 14px; color: var(--text-secondary); max-width: 500px; }
+
+    /* Filter bar */
+    .filter-bar {
+      padding: 12px 48px; display: flex; gap: 6px; align-items: center;
+      border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 5px 12px; border-radius: 5px; border: none; background: transparent;
+      color: var(--text-muted); font-size: 12px; font-weight: 500; font-family: var(--body);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .filter-chip:hover { color: var(--text-secondary); }
+    .filter-chip.active { background: rgba(255,255,255,0.08); color: var(--text); }
+    .filter-spacer { flex: 1; }
+
+    /* ── Entries ─────────────────────────── */
+    .entries { padding: 20px 48px 60px; }
+
+    .entry {
+      border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s;
+      animation: fadeUp 0.35s ease both;
+    }
+    .entry:hover { border-color: var(--border-hover); }
+
+    .entry__header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px; cursor: pointer; user-select: none; transition: background 0.15s;
+    }
+    .entry__header:hover { background: var(--surface-hover); }
+
+    .entry__type-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .entry__type-icon.prototype { background: rgba(232,255,90,0.1); color: var(--accent); }
+    .entry__type-icon.idea { background: rgba(90,159,232,0.1); color: var(--blue); }
+    .entry__type-icon.reference { background: rgba(176,90,232,0.1); color: var(--purple); }
+
+    .entry__info { flex: 1; min-width: 0; }
+    .entry__name {
+      font-family: var(--heading); font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .entry__version { font-family: var(--mono); font-size: 11px; opacity: 0.5; }
+    .entry__desc {
+      font-size: 13px; color: var(--text-secondary); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .entry__meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .entry__date { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+    .badge-proto, .badge-notes {
+      font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px;
+      letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
+    }
+    .badge-proto { background: rgba(232,255,90,0.1); color: var(--accent); }
+    .badge-notes { background: rgba(255,255,255,0.04); color: var(--text-muted); }
+
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.active { background: var(--green); }
+    .status-dot.wip { background: var(--accent); }
+    .status-dot.concept { background: var(--purple); }
+    .status-dot.archived { background: #444; }
+
+    .entry__chevron {
+      color: var(--text-muted); font-size: 14px;
+      transition: transform 0.2s; flex-shrink: 0;
+    }
+    .entry__chevron.open { transform: rotate(90deg); }
+
+    .entry__body { display: none; border-top: 1px solid var(--border); }
+    .entry__body.open { display: block; }
+    .entry__body-inner { padding: 20px 24px; }
+
+    .entry__notes {
+      font-size: 13px; line-height: 1.75; color: var(--text-secondary); max-width: 680px;
+    }
+    .entry__notes h2 { font-family: var(--heading); font-size: 14px; font-weight: 700; color: var(--text); margin: 20px 0 8px; }
+    .entry__notes h2:first-child { margin-top: 0; }
+    .entry__notes ul { padding-left: 20px; margin: 6px 0; }
+    .entry__notes li { margin: 4px 0; }
+    .entry__notes p { margin: 8px 0; }
+    .entry__notes strong { color: var(--text); font-weight: 600; }
+    .entry__notes code { font-family: var(--mono); font-size: 12px; background: rgba(255,255,255,0.05); padding: 2px 5px; border-radius: 3px; }
+
+    .entry__tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 12px; }
+    .tag { padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 11px; font-family: var(--mono); }
+
+    .entry__actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px; border: none;
+      font-size: 12px; font-weight: 600; font-family: var(--body);
+      cursor: pointer; transition: all 0.15s; text-decoration: none;
+    }
+    .btn--primary { background: var(--accent); color: #0A0A0B; }
+    .btn--primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn--ghost { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+    .btn--ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .btn--danger { background: rgba(232,90,90,0.1); color: var(--red); }
+    .btn--danger:hover { background: rgba(232,90,90,0.2); }
+    .btn--small { padding: 5px 10px; font-size: 11px; }
+
+    .entry__preview { margin-top: 16px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #000; }
+    .entry__preview iframe { width: 100%; height: 500px; border: none; }
+
+    /* ── Drop zone ───────────────────────── */
+    .dropzone {
+      border: 2px dashed rgba(232,255,90,0.15); border-radius: 14px;
+      padding: 40px; text-align: center; margin-bottom: 20px;
+      transition: all 0.25s; cursor: pointer; position: relative;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent); background: rgba(232,255,90,0.03);
+    }
+    .dropzone__icon { font-size: 32px; margin-bottom: 10px; opacity: 0.5; }
+    .dropzone__text { font-family: var(--mono); font-size: 13px; color: var(--text-muted); }
+    .dropzone__sub { font-family: var(--mono); font-size: 11px; color: var(--text-ghost); margin-top: 6px; }
+    .dropzone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* ── Modal ────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.15s ease;
+      backdrop-filter: blur(4px);
+    }
+    .modal {
+      background: #141416; border: 1px solid var(--border-hover); border-radius: 16px;
+      padding: 32px; width: 90%; max-width: 560px; max-height: 85vh; overflow-y: auto;
+      animation: fadeUp 0.25s ease;
+    }
+    .modal__title {
+      font-family: var(--heading); font-size: 20px; font-weight: 700;
+      margin-bottom: 24px; letter-spacing: -0.02em;
+    }
+    .modal__close {
+      position: absolute; top: 16px; right: 16px; background: none; border: none;
+      color: var(--text-muted); font-size: 20px; cursor: pointer;
+    }
+
+    .field { margin-bottom: 16px; }
+    .field__label {
+      display: block; font-family: var(--mono); font-size: 11px;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .field__input, .field__select, .field__textarea {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px; color: var(--text); font-size: 13px; font-family: var(--body);
+      transition: border-color 0.2s;
+    }
+    .field__input:focus, .field__select:focus, .field__textarea:focus {
+      outline: none; border-color: rgba(255,255,255,0.2);
+    }
+    .field__select { appearance: none; cursor: pointer; }
+    .field__textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+    .field__row { display: flex; gap: 12px; }
+    .field__row .field { flex: 1; }
+
+    .modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+    /* ── Toast ────────────────────────────── */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      padding: 12px 18px; border-radius: 8px; font-size: 13px; font-family: var(--body);
+      animation: fadeUp 0.3s ease; min-width: 240px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast--success { background: rgba(90,232,181,0.12); border: 1px solid rgba(90,232,181,0.2); color: var(--green); }
+    .toast--error { background: rgba(232,90,90,0.12); border: 1px solid rgba(232,90,90,0.2); color: var(--red); }
+    .toast--info { background: rgba(90,159,232,0.12); border: 1px solid rgba(90,159,232,0.2); color: var(--blue); }
+
+    /* ── Settings banner ─────────────────── */
+    .settings-banner {
+      padding: 16px 20px; background: rgba(232,168,90,0.08);
+      border-bottom: 1px solid rgba(232,168,90,0.15);
+      font-size: 13px; color: var(--amber);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .settings-banner input {
+      flex: 1; max-width: 400px; padding: 7px 10px;
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(232,168,90,0.2);
+      border-radius: 6px; color: var(--text); font-size: 12px; font-family: var(--mono);
+    }
+    .settings-banner input:focus { outline: none; border-color: var(--amber); }
+    .settings-banner input::placeholder { color: rgba(232,168,90,0.4); }
+
+    /* ── Empty / Loading ─────────────────── */
+    .empty { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+    .empty__icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+    .empty__text { font-family: var(--mono); font-size: 13px; }
+    .loading { display: flex; justify-content: center; padding: 100px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.06); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+    /* ── Confirm dialog ──────────────────── */
+    .confirm-msg { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 8px; }
+    .confirm-name { font-family: var(--heading); color: var(--text); }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: -280px; z-index: 99; transition: left 0.25s ease; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+      .sidebar.open { left: 0; }
+      .main__header, .filter-bar, .entries { padding-left: 20px; padding-right: 20px; }
+      .mobile-toggle { display: flex !important; }
+    }
+
+    .mobile-toggle {
+      display: none; position: fixed; top: 12px; left: 12px; z-index: 100;
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--bg-sidebar); border: 1px solid var(--border);
+      color: var(--text); font-size: 18px; cursor: pointer;
+      align-items: center; justify-content: center;
+    }
+
+    .syncing-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+      animation: pulse 1s ease-in-out infinite; margin-right: 4px; display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="mobile-toggle" id="mobileToggle">☰</button>
+  <div class="toast-container" id="toasts"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__logo">Morphika</div>
+      <div class="sidebar__tagline">prototypes · ideas · R&D</div>
+    </div>
+    <div class="sidebar__search">
+      <input type="text" id="searchInput" placeholder="Search...">
+    </div>
+    <nav class="sidebar__nav" id="sidebarNav"></nav>
+    <div class="sidebar__actions">
+      <div class="nav-item" id="btnSettings" style="color: var(--text-muted)">
+        <span class="nav-item__icon">⚙</span>
+        <span class="nav-item__name">Settings</span>
+      </div>
+    </div>
+    <div class="sidebar__footer" id="sidebarFooter">Loading...</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="loading"><div class="spinner"></div></div>
+  </main>
+
+  <script>
+    // ════════════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════════════
+    let manifest = null;
+    let activeSection = '__all';
+    let activeFilter = 'all';
+    let searchQuery = '';
+    let openEntries = {};
+    let previewEntries = {};
+    let syncing = false;
+
+    const TYPES = { prototype: '⬡', idea: '✧', reference: '◆' };
+    const STATUSES = ['active', 'wip', 'concept', 'archived'];
+
+    // GitHub config (stored in localStorage)
+    function getConfig() {
+      return {
+        token: localStorage.getItem('mh_token') || '',
+        owner: localStorage.getItem('mh_owner') || '',
+        repo: localStorage.getItem('mh_repo') || 'morphika-hub'
+      };
+    }
+    function setConfig(key, val) { localStorage.setItem('mh_' + key, val); }
+    function isConfigured() { const c = getConfig(); return c.token && c.owner; }
+
+    // ════════════════════════════════════════════════
+    //  GITHUB API
+    // ════════════════════════════════════════════════
+    async function ghAPI(path, method = 'GET', body = null) {
+      const c = getConfig();
+      const opts = {
+        method,
+        headers: {
+          'Authorization': `token ${c.token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      };
+      if (body) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/${path}`, opts);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `GitHub API ${res.status}`);
+      }
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    // Get file SHA (needed for updates/deletes)
+    async function getFileSHA(path) {
+      try {
+        const data = await ghAPI(`contents/${path}`);
+        return data.sha;
+      } catch { return null; }
+    }
+
+    // Create or update a file
+    async function putFile(path, content, message) {
+      const sha = await getFileSHA(path);
+      const body = {
+        message,
+        content: btoa(unescape(encodeURIComponent(content)))
+      };
+      if (sha) body.sha = sha;
+      return ghAPI(`contents/${path}`, 'PUT', body);
+    }
+
+    // Delete a file
+    async function deleteFile(path, message) {
+      const sha = await getFileSHA(path);
+      if (!sha) return;
+      return ghAPI(`contents/${path}`, 'DELETE', { message, sha });
+    }
+
+    // List directory contents
+    async function listDir(path) {
+      try {
+        return await ghAPI(`contents/${path}`);
+      } catch { return []; }
+    }
+
+    // Delete an entire directory (recursive)
+    async function deleteDir(dirPath, message) {
+      const items = await listDir(dirPath);
+      if (!Array.isArray(items)) return;
+      for (const item of items) {
+        if (item.type === 'dir') {
+          await deleteDir(item.path, message);
+        } else {
+          await ghAPI(`contents/${item.path}`, 'DELETE', { message, sha: item.sha });
+        }
+      }
+    }
+
+    // ════════════════════════════════════════════════
+    //  ENTRY CRUD
+    // ════════════════════════════════════════════════
+    async function createEntry(sectionId, entryId, meta, htmlContent, notes) {
+      const basePath = `sections/${sectionId}/${entryId}`;
+      syncing = true; renderSidebarFooter();
+      try {
+        await putFile(`${basePath}/meta.json`, JSON.stringify(meta, null, 2), `add: ${sectionId}/${entryId}`);
+        if (htmlContent) {
+          await putFile(`${basePath}/index.html`, htmlContent, `add: ${sectionId}/${entryId} prototype`);
+        }
+        if (notes) {
+          await putFile(`${basePath}/notes.md`, notes, `add: ${sectionId}/${entryId} notes`);
+        }
+        toast('success', `Created "${meta.name}"`);
+        await reloadManifest();
+      } catch (e) {
+        toast('error', `Error: ${e.message}`);
+      }
+      syncing = false; renderSidebarFooter();
+    }
+
+    async function updateEntry(sectionId, entryId, meta, htmlContent, notes) {
+      const basePath = `sections/${sectionId}/${entryId}`;
+      syncing = true; renderSidebarFooter();
+      try {
+        await putFile(`${basePath}/meta.json`, JSON.stringify(meta, null, 2), `update: ${sectionId}/${entryId}`);
+        if (htmlContent !== undefined && htmlContent !== null) {
+          await putFile(`${basePath}/index.html`, htmlContent, `update: ${sectionId}/${entryId} prototype`);
+        }
+        if (notes !== undefined) {
+          if (notes) {
+            await putFile(`${basePath}/notes.md`, notes, `update: ${sectionId}/${entryId} notes`);
+          }
+        }
+        toast('success', `Updated "${meta.name}"`);
+        await reloadManifest();
+      } catch (e) {
+        toast('error', `Error: ${e.message}`);
+      }
+      syncing = false; renderSidebarFooter();
+    }
+
+    async function removeEntry(sectionId, entryId, name) {
+      syncing = true; renderSidebarFooter();
+      try {
+        await deleteDir(`sections/${sectionId}/${entryId}`, `remove: ${sectionId}/${entryId}`);
+        toast('success', `Deleted "${name}"`);
+        await reloadManifest();
+      } catch (e) {
+        toast('error', `Error: ${e.message}`);
+      }
+      syncing = false; renderSidebarFooter();
+    }
+
+    async function createSection(id, config) {
+      syncing = true; renderSidebarFooter();
+      try {
+        await putFile(`sections/${id}/section.json`, JSON.stringify(config, null, 2), `add section: ${id}`);
+        toast('success', `Created section "${config.name}"`);
+        await reloadManifest();
+      } catch (e) {
+        toast('error', `Error: ${e.message}`);
+      }
+      syncing = false; renderSidebarFooter();
+    }
+
+    // ════════════════════════════════════════════════
+    //  MANIFEST
+    // ════════════════════════════════════════════════
+    async function loadManifest() {
+      try {
+        const res = await fetch('manifest.json?t=' + Date.now());
+        manifest = await res.json();
+        buildSidebar();
+        renderMain();
+      } catch {
+        document.getElementById('main').innerHTML =
+          '<div class="empty"><div class="empty__icon">⚠</div><div class="empty__text">Could not load manifest.json — push the repo first</div></div>';
+      }
+    }
+
+    async function reloadManifest() {
+      // Wait for GitHub Action to rebuild manifest (or fetch fresh data)
+      // For instant feedback, we refetch after a short delay
+      toast('info', 'Syncing with GitHub...');
+      await new Promise(r => setTimeout(r, 3000));
+      await loadManifest();
+    }
+
+    // ════════════════════════════════════════════════
+    //  SIDEBAR
+    // ════════════════════════════════════════════════
+    function buildSidebar() {
+      const nav = document.getElementById('sidebarNav');
+      const total = manifest.sections.reduce((a, s) => a + s.entries.length, 0);
+      let h = '';
+      h += `<div class="nav-item ${activeSection === '__all' ? 'active' : ''}" data-section="__all">
+        <span class="nav-item__icon">⊞</span><span class="nav-item__name">All</span>
+        <span class="nav-item__count">${total}</span>
+      </div>`;
+      h += '<div class="sidebar__section-label">Sections</div>';
+      for (const sec of manifest.sections) {
+        h += `<div class="nav-item ${activeSection === sec.id ? 'active' : ''}" data-section="${sec.id}">
+          <span class="nav-item__icon">${sec.icon}</span><span class="nav-item__name">${sec.name}</span>
+          <span class="nav-item__count">${sec.entries.length}</span>
+        </div>`;
+      }
+      nav.innerHTML = h;
+      nav.querySelectorAll('.nav-item').forEach(el => {
+        el.addEventListener('click', () => {
+          activeSection = el.dataset.section;
+          activeFilter = 'all';
+          buildSidebar();
+          renderMain();
+          document.getElementById('sidebar').classList.remove('open');
+        });
+      });
+      renderSidebarFooter();
+    }
+
+    function renderSidebarFooter() {
+      if (!manifest) return;
+      const total = manifest.sections.reduce((a, s) => a + s.entries.length, 0);
+      const protos = manifest.sections.reduce((a, s) => a + s.entries.filter(e => e.hasPrototype).length, 0);
+      document.getElementById('sidebarFooter').innerHTML = syncing
+        ? '<span class="syncing-dot"></span> Syncing...'
+        : `${manifest.sections.length} sections · ${total} entries · ${protos} protos`;
+    }
+
+    // ════════════════════════════════════════════════
+    //  MAIN RENDER
+    // ════════════════════════════════════════════════
+    function renderMain() {
+      const main = document.getElementById('main');
+      const entries = getFilteredEntries();
+      const section = manifest.sections.find(s => s.id === activeSection);
+      const configured = isConfigured();
+      let h = '';
+
+      // Header
+      if (activeSection === '__all') {
+        h += `<div class="main__header"><h1 class="main__title" style="background:linear-gradient(135deg,#fff 20%,#555 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Everything</h1><p class="main__desc">All entries across every section</p></div>`;
+      } else if (section) {
+        h += `<div class="main__header"><div class="main__section-icon">${section.icon}</div><h1 class="main__title">${section.name}</h1><p class="main__desc">${section.description}</p></div>`;
+      }
+
+      // Filters + add button
+      h += '<div class="filter-bar">';
+      for (const f of ['all', 'prototype', 'idea', 'reference']) {
+        h += `<button class="filter-chip ${activeFilter === f ? 'active' : ''}" data-filter="${f}">${f === 'all' ? 'All' : f[0].toUpperCase() + f.slice(1) + 's'}</button>`;
+      }
+      h += '<span class="filter-spacer"></span>';
+      if (configured) {
+        h += `<button class="btn btn--primary btn--small" id="btnNewEntry">+ New entry</button>`;
+        if (activeSection === '__all') {
+          h += `<button class="btn btn--ghost btn--small" id="btnNewSection" style="margin-left:4px">+ Section</button>`;
+        }
+      }
+      h += '</div>';
+
+      // Content area
+      h += '<div class="entries">';
+
+      // Drop zone (only if configured and in a specific section)
+      if (configured && activeSection !== '__all') {
+        h += `<div class="dropzone" id="dropzone">
+          <div class="dropzone__icon">⬡</div>
+          <div class="dropzone__text">Drop an HTML file here to create a prototype</div>
+          <div class="dropzone__sub">or click to browse</div>
+          <input type="file" accept=".html,.htm" id="fileInput">
+        </div>`;
+      }
+
+      // Config banner if not set up
+      if (!configured) {
+        h += `<div style="margin-bottom:20px; padding:24px; border-radius:12px; background:rgba(232,168,90,0.05); border:1px solid rgba(232,168,90,0.12)">
+          <p style="font-family:var(--heading); font-size:15px; color:var(--amber); margin-bottom:12px">⚙ Connect to GitHub to manage entries</p>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.6">
+            To create, edit, and delete entries directly from this dashboard, you need a GitHub Personal Access Token.
+            Click <strong>Settings</strong> in the sidebar to configure it. Without it, you can still browse everything.
+          </p>
+        </div>`;
+      }
+
+      if (entries.length === 0) {
+        h += '<div class="empty"><div class="empty__icon">∅</div><div class="empty__text">No entries yet</div></div>';
+      }
+
+      for (const { entry, sectionData } of entries) {
+        const eid = sectionData.id + '/' + entry.id;
+        const isOpen = openEntries[eid];
+        const isPreviewing = previewEntries[eid];
+        const tc = entry.type || 'idea';
+
+        h += `<div class="entry">
+          <div class="entry__header" data-eid="${eid}">
+            <div class="entry__type-icon ${tc}">${TYPES[tc] || '✧'}</div>
+            <div class="entry__info">
+              <div class="entry__name">${entry.name}${entry.version ? `<span class="entry__version">${entry.version}</span>` : ''}</div>
+              <div class="entry__desc">${entry.description}</div>
+            </div>
+            <div class="entry__meta">
+              <div style="display:flex;gap:4px">${entry.hasPrototype ? '<span class="badge-proto">proto</span>' : ''}${entry.hasNotes ? '<span class="badge-notes">notes</span>' : ''}</div>
+              <span class="status-dot ${entry.status}"></span>
+              <span class="entry__date">${entry.date}</span>
+              <span class="entry__chevron ${isOpen ? 'open' : ''}">▸</span>
+            </div>
+          </div>
+          <div class="entry__body ${isOpen ? 'open' : ''}">
+            <div class="entry__body-inner">
+              ${entry.hasNotes && entry.notes ? `<div class="entry__notes">${renderMD(entry.notes)}</div>` : ''}
+              ${entry.tags?.length ? `<div class="entry__tags">${entry.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+              <div class="entry__actions">
+                ${entry.hasPrototype ? `<a class="btn btn--primary" href="${entry.path}" target="_blank">↗ Open</a>` : ''}
+                ${entry.hasPrototype ? `<button class="btn btn--ghost" data-preview="${eid}">${isPreviewing ? '✕ Close' : '◧ Preview'}</button>` : ''}
+                ${configured ? `<button class="btn btn--ghost" data-edit="${eid}">✎ Edit</button>` : ''}
+                ${configured ? `<button class="btn btn--danger btn--small" data-delete="${eid}" data-name="${entry.name}">✕ Delete</button>` : ''}
+              </div>
+              ${isPreviewing && entry.path ? `<div class="entry__preview"><iframe src="${entry.path}" loading="lazy"></iframe></div>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      h += '</div>';
+      main.innerHTML = h;
+
+      // ── Event listeners ──
+      main.querySelectorAll('.entry__header').forEach(el =>
+        el.addEventListener('click', () => { openEntries[el.dataset.eid] = !openEntries[el.dataset.eid]; renderMain(); }));
+
+      main.querySelectorAll('[data-preview]').forEach(el =>
+        el.addEventListener('click', e => { e.stopPropagation(); previewEntries[el.dataset.preview] = !previewEntries[el.dataset.preview]; renderMain(); }));
+
+      main.querySelectorAll('.filter-chip').forEach(el =>
+        el.addEventListener('click', () => { activeFilter = el.dataset.filter; renderMain(); }));
+
+      main.querySelectorAll('[data-delete]').forEach(el =>
+        el.addEventListener('click', e => { e.stopPropagation(); showDeleteConfirm(el.dataset.delete, el.dataset.name); }));
+
+      main.querySelectorAll('[data-edit]').forEach(el =>
+        el.addEventListener('click', e => { e.stopPropagation(); showEditModal(el.dataset.edit); }));
+
+      const btnNew = document.getElementById('btnNewEntry');
+      if (btnNew) btnNew.addEventListener('click', () => showNewModal());
+
+      const btnSec = document.getElementById('btnNewSection');
+      if (btnSec) btnSec.addEventListener('click', () => showNewSectionModal());
+
+      // Drop zone
+      const dz = document.getElementById('dropzone');
+      if (dz) {
+        const fi = document.getElementById('fileInput');
+        ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+        ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+        dz.addEventListener('drop', e => handleFileDrop(e.dataTransfer.files));
+        fi.addEventListener('change', e => handleFileDrop(e.target.files));
+      }
+    }
+
+    // ════════════════════════════════════════════════
+    //  FILTERED ENTRIES
+    // ════════════════════════════════════════════════
+    function getFilteredEntries() {
+      const q = searchQuery.toLowerCase();
+      const results = [];
+      const secs = activeSection === '__all' ? manifest.sections : manifest.sections.filter(s => s.id === activeSection);
+      for (const sec of secs) {
+        for (const entry of sec.entries) {
+          if (activeFilter !== 'all' && entry.type !== activeFilter) continue;
+          if (q) {
+            const hay = [entry.name, entry.description, ...(entry.tags || []), sec.name].join(' ').toLowerCase();
+            if (!hay.includes(q)) continue;
+          }
+          results.push({ entry, sectionData: sec });
+        }
+      }
+      results.sort((a, b) => b.entry.date.localeCompare(a.entry.date));
+      return results;
+    }
+
+    // ════════════════════════════════════════════════
+    //  FILE DROP HANDLER
+    // ════════════════════════════════════════════════
+    function handleFileDrop(files) {
+      if (!files.length) return;
+      const file = files[0];
+      if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
+        toast('error', 'Only .html files'); return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        showNewModal(reader.result, file.name.replace(/\.(html|htm)$/, ''));
+      };
+      reader.readAsText(file);
+    }
+
+    // ════════════════════════════════════════════════
+    //  MODALS
+    // ════════════════════════════════════════════════
+    function showModal(html) {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `<div class="modal" style="position:relative">${html}</div>`;
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+      return overlay;
+    }
+
+    function showNewModal(htmlContent = null, suggestedName = '') {
+      const sectionId = activeSection === '__all' ? (manifest.sections[0]?.id || '') : activeSection;
+      const secOptions = manifest.sections.map(s => `<option value="${s.id}" ${s.id === sectionId ? 'selected' : ''}>${s.icon} ${s.name}</option>`).join('');
+      const today = new Date().toISOString().split('T')[0];
+
+      const overlay = showModal(`
+        <h2 class="modal__title">${htmlContent ? '⬡ New Prototype' : '✧ New Entry'}</h2>
+        <div class="field"><label class="field__label">Section</label><select class="field__select" id="m_section">${secOptions}</select></div>
+        <div class="field__row">
+          <div class="field"><label class="field__label">Name</label><input class="field__input" id="m_name" value="${suggestedName}" placeholder="e.g. Review Tool"></div>
+          <div class="field"><label class="field__label">Version</label><input class="field__input" id="m_version" value="v0.1" placeholder="v0.1"></div>
+        </div>
+        <div class="field__row">
+          <div class="field"><label class="field__label">Type</label>
+            <select class="field__select" id="m_type">
+              <option value="prototype" ${htmlContent ? 'selected' : ''}>⬡ Prototype</option>
+              <option value="idea" ${!htmlContent ? 'selected' : ''}>✧ Idea</option>
+              <option value="reference">◆ Reference</option>
+            </select>
+          </div>
+          <div class="field"><label class="field__label">Status</label>
+            <select class="field__select" id="m_status">
+              <option value="active">Active</option><option value="wip">WIP</option>
+              <option value="concept">Concept</option><option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="field"><label class="field__label">Date</label><input class="field__input" type="date" id="m_date" value="${today}"></div>
+        </div>
+        <div class="field"><label class="field__label">Description</label><input class="field__input" id="m_desc" placeholder="Short description"></div>
+        <div class="field"><label class="field__label">Tags (comma separated)</label><input class="field__input" id="m_tags" placeholder="review, video, client"></div>
+        <div class="field"><label class="field__label">Notes (markdown, optional)</label><textarea class="field__textarea" id="m_notes" placeholder="## Notes\n\n- Point one\n- Point two"></textarea></div>
+        ${htmlContent ? '<div style="padding:10px 14px;border-radius:8px;background:rgba(232,255,90,0.05);border:1px solid rgba(232,255,90,0.1);font-size:12px;color:var(--accent);font-family:var(--mono)">✓ HTML file loaded — will be saved as prototype</div>' : ''}
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="m_cancel">Cancel</button>
+          <button class="btn btn--primary" id="m_save">Create</button>
+        </div>
+      `);
+
+      overlay.querySelector('#m_cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#m_save').addEventListener('click', async () => {
+        const name = overlay.querySelector('#m_name').value.trim();
+        if (!name) { toast('error', 'Name is required'); return; }
+        const sec = overlay.querySelector('#m_section').value;
+        const entryId = slugify(name) + '-' + overlay.querySelector('#m_version').value.replace(/\./g, '');
+        const meta = {
+          name,
+          version: overlay.querySelector('#m_version').value || null,
+          type: overlay.querySelector('#m_type').value,
+          date: overlay.querySelector('#m_date').value,
+          status: overlay.querySelector('#m_status').value,
+          description: overlay.querySelector('#m_desc').value,
+          tags: overlay.querySelector('#m_tags').value.split(',').map(t => t.trim()).filter(Boolean)
+        };
+        const notes = overlay.querySelector('#m_notes').value.trim() || null;
+        overlay.remove();
+        await createEntry(sec, entryId, meta, htmlContent, notes);
+      });
+
+      overlay.querySelector('#m_name').focus();
+    }
+
+    function showEditModal(eid) {
+      const [secId, entryId] = eid.split('/');
+      const sec = manifest.sections.find(s => s.id === secId);
+      const entry = sec?.entries.find(e => e.id === entryId);
+      if (!entry) return;
+
+      const secOptions = manifest.sections.map(s => `<option value="${s.id}" ${s.id === secId ? 'selected' : ''}>${s.icon} ${s.name}</option>`).join('');
+
+      const overlay = showModal(`
+        <h2 class="modal__title">✎ Edit: ${entry.name}</h2>
+        <div class="field"><label class="field__label">Section</label><select class="field__select" id="m_section" disabled>${secOptions}</select></div>
+        <div class="field__row">
+          <div class="field"><label class="field__label">Name</label><input class="field__input" id="m_name" value="${entry.name}"></div>
+          <div class="field"><label class="field__label">Version</label><input class="field__input" id="m_version" value="${entry.version || ''}"></div>
+        </div>
+        <div class="field__row">
+          <div class="field"><label class="field__label">Type</label>
+            <select class="field__select" id="m_type">
+              <option value="prototype" ${entry.type === 'prototype' ? 'selected' : ''}>⬡ Prototype</option>
+              <option value="idea" ${entry.type === 'idea' ? 'selected' : ''}>✧ Idea</option>
+              <option value="reference" ${entry.type === 'reference' ? 'selected' : ''}>◆ Reference</option>
+            </select>
+          </div>
+          <div class="field"><label class="field__label">Status</label>
+            <select class="field__select" id="m_status">
+              ${STATUSES.map(s => `<option value="${s}" ${entry.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label class="field__label">Date</label><input class="field__input" type="date" id="m_date" value="${entry.date}"></div>
+        </div>
+        <div class="field"><label class="field__label">Description</label><input class="field__input" id="m_desc" value="${entry.description}"></div>
+        <div class="field"><label class="field__label">Tags</label><input class="field__input" id="m_tags" value="${(entry.tags || []).join(', ')}"></div>
+        <div class="field"><label class="field__label">Notes (markdown)</label><textarea class="field__textarea" id="m_notes">${entry.notes || ''}</textarea></div>
+        ${entry.hasPrototype ? `<div class="field">
+          <label class="field__label">Replace prototype HTML (optional)</label>
+          <div class="dropzone" style="padding:20px;margin:0" id="editDropzone">
+            <div class="dropzone__text" style="font-size:12px">Drop new .html to replace</div>
+            <input type="file" accept=".html,.htm" id="editFileInput">
+          </div>
+        </div>` : ''}
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="m_cancel">Cancel</button>
+          <button class="btn btn--primary" id="m_save">Save changes</button>
+        </div>
+      `);
+
+      let newHtml = null;
+      const editDz = overlay.querySelector('#editDropzone');
+      if (editDz) {
+        const editFi = overlay.querySelector('#editFileInput');
+        editDz.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { const r = new FileReader(); r.onload = () => { newHtml = r.result; editDz.querySelector('.dropzone__text').textContent = '✓ ' + f.name; }; r.readAsText(f); }});
+        editDz.addEventListener('dragover', e => e.preventDefault());
+        editFi.addEventListener('change', e => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = () => { newHtml = r.result; editDz.querySelector('.dropzone__text').textContent = '✓ ' + f.name; }; r.readAsText(f); }});
+      }
+
+      overlay.querySelector('#m_cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#m_save').addEventListener('click', async () => {
+        const meta = {
+          name: overlay.querySelector('#m_name').value.trim(),
+          version: overlay.querySelector('#m_version').value || null,
+          type: overlay.querySelector('#m_type').value,
+          date: overlay.querySelector('#m_date').value,
+          status: overlay.querySelector('#m_status').value,
+          description: overlay.querySelector('#m_desc').value,
+          tags: overlay.querySelector('#m_tags').value.split(',').map(t => t.trim()).filter(Boolean)
+        };
+        const notes = overlay.querySelector('#m_notes').value.trim() || null;
+        overlay.remove();
+        await updateEntry(secId, entryId, meta, newHtml, notes);
+      });
+    }
+
+    function showDeleteConfirm(eid, name) {
+      const overlay = showModal(`
+        <h2 class="modal__title" style="color:var(--red)">Delete entry</h2>
+        <p class="confirm-msg">This will permanently delete <span class="confirm-name">${name}</span> and all its files from the repository. This cannot be undone.</p>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="m_cancel">Cancel</button>
+          <button class="btn btn--danger" id="m_confirm">Delete permanently</button>
+        </div>
+      `);
+      overlay.querySelector('#m_cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#m_confirm').addEventListener('click', async () => {
+        const [secId, entryId] = eid.split('/');
+        overlay.remove();
+        await removeEntry(secId, entryId, name);
+      });
+    }
+
+    function showNewSectionModal() {
+      const overlay = showModal(`
+        <h2 class="modal__title">+ New Section</h2>
+        <div class="field"><label class="field__label">Name</label><input class="field__input" id="m_name" placeholder="e.g. Client Delivery"></div>
+        <div class="field__row">
+          <div class="field"><label class="field__label">Icon (emoji)</label><input class="field__input" id="m_icon" placeholder="◎" value="◎"></div>
+          <div class="field"><label class="field__label">Color (hex)</label><input class="field__input" id="m_color" placeholder="#E8FF5A" value="#E8FF5A"></div>
+        </div>
+        <div class="field"><label class="field__label">Description</label><input class="field__input" id="m_desc" placeholder="What this section covers"></div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="m_cancel">Cancel</button>
+          <button class="btn btn--primary" id="m_save">Create section</button>
+        </div>
+      `);
+      overlay.querySelector('#m_cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#m_save').addEventListener('click', async () => {
+        const name = overlay.querySelector('#m_name').value.trim();
+        if (!name) { toast('error', 'Name required'); return; }
+        const id = slugify(name);
+        overlay.remove();
+        await createSection(id, {
+          name,
+          icon: overlay.querySelector('#m_icon').value || '●',
+          color: overlay.querySelector('#m_color').value || '#888',
+          description: overlay.querySelector('#m_desc').value || ''
+        });
+      });
+    }
+
+    function showSettingsModal() {
+      const c = getConfig();
+      const overlay = showModal(`
+        <h2 class="modal__title">⚙ Settings</h2>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6">
+          Connect to your GitHub repo to create, edit, and delete entries directly from this dashboard.
+          Your token is stored only in your browser's localStorage — never sent anywhere except GitHub's API.
+        </p>
+        <div class="field">
+          <label class="field__label">GitHub Username</label>
+          <input class="field__input" id="s_owner" value="${c.owner}" placeholder="e.g. designerjdc-cmyk">
+        </div>
+        <div class="field">
+          <label class="field__label">Repository Name</label>
+          <input class="field__input" id="s_repo" value="${c.repo}" placeholder="morphika-hub">
+        </div>
+        <div class="field">
+          <label class="field__label">Personal Access Token</label>
+          <input class="field__input" id="s_token" type="password" value="${c.token}" placeholder="ghp_...">
+          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5">
+            Create at <strong>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained</strong>.
+            Only needs <strong>Contents: Read and write</strong> permission on this repo.
+          </p>
+        </div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="m_cancel">Cancel</button>
+          <button class="btn btn--primary" id="m_save">Save</button>
+        </div>
+      `);
+      overlay.querySelector('#m_cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#m_save').addEventListener('click', () => {
+        setConfig('owner', overlay.querySelector('#s_owner').value.trim());
+        setConfig('repo', overlay.querySelector('#s_repo').value.trim());
+        setConfig('token', overlay.querySelector('#s_token').value.trim());
+        overlay.remove();
+        toast('success', 'Settings saved');
+        renderMain();
+      });
+    }
+
+    // ════════════════════════════════════════════════
+    //  UTILS
+    // ════════════════════════════════════════════════
+    function slugify(str) {
+      return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40);
+    }
+
+    function renderMD(md) {
+      return md
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/gs, m => '<ul>' + m + '</ul>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        .replace(/^(?!<[hulo])(.*\S.*)$/gm, '<p>$1</p>')
+        .replace(/\n{2,}/g, '');
+    }
+
+    function toast(type, msg) {
+      const c = document.getElementById('toasts');
+      const t = document.createElement('div');
+      t.className = `toast toast--${type}`;
+      t.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 4000);
+    }
+
+    // ════════════════════════════════════════════════
+    //  INIT
+    // ════════════════════════════════════════════════
+    document.getElementById('searchInput').addEventListener('input', e => { searchQuery = e.target.value; renderMain(); });
+    document.getElementById('mobileToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+    document.getElementById('btnSettings').addEventListener('click', () => showSettingsModal());
+
+    loadManifest();
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "Morphika Review",
+  "version": "v0.2",
+  "type": "prototype",
+  "date": "2025-03-20",
+  "status": "active",
+  "description": "Image annotations + multi-version comparison view",
+  "tags": ["review", "annotations", "comparison"]
+}
