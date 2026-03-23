@@ -471,12 +471,47 @@
     }
 
     // ════════════════════════════════════════════════
-    //  ENTRY CRUD
+    //  MANIFEST — local state + push to GitHub
+    // ════════════════════════════════════════════════
+    async function loadManifest() {
+      try {
+        const res = await fetch('manifest.json?t=' + Date.now());
+        manifest = await res.json();
+        buildSidebar();
+        renderMain();
+      } catch {
+        // If no manifest yet, start with empty
+        manifest = { hub: { name: 'Morphika', tagline: 'prototypes · ideas · R&D', generated: new Date().toISOString() }, sections: [] };
+        buildSidebar();
+        renderMain();
+      }
+    }
+
+    // Push current manifest state to GitHub (background, non-blocking for UI)
+    async function pushManifest() {
+      manifest.hub.generated = new Date().toISOString();
+      const content = JSON.stringify(manifest, null, 2);
+      try {
+        await putFile('manifest.json', content, 'auto: update manifest');
+      } catch (e) {
+        console.warn('Could not push manifest:', e.message);
+      }
+    }
+
+    // Instant UI refresh + background sync
+    function refreshUI() {
+      buildSidebar();
+      renderMain();
+    }
+
+    // ════════════════════════════════════════════════
+    //  ENTRY CRUD — instant local update + GitHub push
     // ════════════════════════════════════════════════
     async function createEntry(sectionId, entryId, meta, htmlContent, notes) {
       const basePath = `sections/${sectionId}/${entryId}`;
       syncing = true; renderSidebarFooter();
       try {
+        // Push files to GitHub
         await putFile(`${basePath}/meta.json`, JSON.stringify(meta, null, 2), `add: ${sectionId}/${entryId}`);
         if (htmlContent) {
           await putFile(`${basePath}/index.html`, htmlContent, `add: ${sectionId}/${entryId} prototype`);
@@ -484,8 +519,32 @@
         if (notes) {
           await putFile(`${basePath}/notes.md`, notes, `add: ${sectionId}/${entryId} notes`);
         }
+
+        // Instant local update
+        let sec = manifest.sections.find(s => s.id === sectionId);
+        if (sec) {
+          sec.entries.push({
+            id: entryId,
+            name: meta.name,
+            type: meta.type || 'idea',
+            version: meta.version || null,
+            date: meta.date || new Date().toISOString().split('T')[0],
+            status: meta.status || 'concept',
+            description: meta.description || '',
+            tags: meta.tags || [],
+            hasPrototype: !!htmlContent,
+            hasNotes: !!notes,
+            path: htmlContent ? `${basePath}/index.html` : null,
+            notes: notes || null
+          });
+          sec.entries.sort((a, b) => b.date.localeCompare(a.date));
+        }
+
         toast('success', `Created "${meta.name}"`);
-        await reloadManifest();
+        refreshUI();
+
+        // Push manifest in background
+        await pushManifest();
       } catch (e) {
         toast('error', `Error: ${e.message}`);
       }
@@ -500,13 +559,30 @@
         if (htmlContent !== undefined && htmlContent !== null) {
           await putFile(`${basePath}/index.html`, htmlContent, `update: ${sectionId}/${entryId} prototype`);
         }
-        if (notes !== undefined) {
-          if (notes) {
-            await putFile(`${basePath}/notes.md`, notes, `update: ${sectionId}/${entryId} notes`);
+        if (notes !== undefined && notes) {
+          await putFile(`${basePath}/notes.md`, notes, `update: ${sectionId}/${entryId} notes`);
+        }
+
+        // Instant local update
+        let sec = manifest.sections.find(s => s.id === sectionId);
+        if (sec) {
+          let entry = sec.entries.find(e => e.id === entryId);
+          if (entry) {
+            entry.name = meta.name;
+            entry.type = meta.type || entry.type;
+            entry.version = meta.version || entry.version;
+            entry.date = meta.date || entry.date;
+            entry.status = meta.status || entry.status;
+            entry.description = meta.description || entry.description;
+            entry.tags = meta.tags || entry.tags;
+            if (htmlContent) { entry.hasPrototype = true; entry.path = `${basePath}/index.html`; }
+            if (notes) { entry.hasNotes = true; entry.notes = notes; }
           }
         }
+
         toast('success', `Updated "${meta.name}"`);
-        await reloadManifest();
+        refreshUI();
+        await pushManifest();
       } catch (e) {
         toast('error', `Error: ${e.message}`);
       }
@@ -517,8 +593,16 @@
       syncing = true; renderSidebarFooter();
       try {
         await deleteDir(`sections/${sectionId}/${entryId}`, `remove: ${sectionId}/${entryId}`);
+
+        // Instant local removal
+        let sec = manifest.sections.find(s => s.id === sectionId);
+        if (sec) {
+          sec.entries = sec.entries.filter(e => e.id !== entryId);
+        }
+
         toast('success', `Deleted "${name}"`);
-        await reloadManifest();
+        refreshUI();
+        await pushManifest();
       } catch (e) {
         toast('error', `Error: ${e.message}`);
       }
@@ -529,35 +613,24 @@
       syncing = true; renderSidebarFooter();
       try {
         await putFile(`sections/${id}/section.json`, JSON.stringify(config, null, 2), `add section: ${id}`);
+
+        // Instant local update
+        manifest.sections.push({
+          id,
+          name: config.name,
+          icon: config.icon || '●',
+          color: config.color || '#888',
+          description: config.description || '',
+          entries: []
+        });
+
         toast('success', `Created section "${config.name}"`);
-        await reloadManifest();
+        refreshUI();
+        await pushManifest();
       } catch (e) {
         toast('error', `Error: ${e.message}`);
       }
       syncing = false; renderSidebarFooter();
-    }
-
-    // ════════════════════════════════════════════════
-    //  MANIFEST
-    // ════════════════════════════════════════════════
-    async function loadManifest() {
-      try {
-        const res = await fetch('manifest.json?t=' + Date.now());
-        manifest = await res.json();
-        buildSidebar();
-        renderMain();
-      } catch {
-        document.getElementById('main').innerHTML =
-          '<div class="empty"><div class="empty__icon">⚠</div><div class="empty__text">Could not load manifest.json — push the repo first</div></div>';
-      }
-    }
-
-    async function reloadManifest() {
-      // Wait for GitHub Action to rebuild manifest (or fetch fresh data)
-      // For instant feedback, we refetch after a short delay
-      toast('info', 'Syncing with GitHub...');
-      await new Promise(r => setTimeout(r, 3000));
-      await loadManifest();
     }
 
     // ════════════════════════════════════════════════
